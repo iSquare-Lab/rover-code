@@ -16,7 +16,8 @@ program in real Python. Pick up the rock samples, steer clear of rocks and crate
 - **Three stars per mission**: land; use no more actions (moves, turns, picks) than par; write no more lines than
   par. Pars come from reference solutions that the tests run.
 - A code editor with Python highlighting and indenting (CodeMirror), a Python reference, light and dark themes,
-  works on phones. Your programs and stars stay in this browser's `localStorage`; nothing is sent anywhere.
+  works on phones. Your programs and stars stay in this browser's `localStorage`; nothing is sent anywhere. The replay respects
+  your system's reduced-motion setting.
 
 ## The rover's functions
 
@@ -35,12 +36,14 @@ program in real Python. Pick up the rock samples, steer clear of rocks and crate
 `src/rover.py` is the world: the map, the rover and the functions above. A Web Worker
 (`src/python.worker.ts`) runs your program there against every map of the mission and sends back each step
 with the line that made it; the page then replays it on a canvas. A runaway loop is stopped by a limit on moves
-and lines in Python, and by replacing the worker if it still does not answer. Pyodide is served from this
+and lines in Python, and by replacing the worker if it still does not answer. A program cannot hide a crash or a
+limit by catching it with `try`/`except`: once the run is over, it stays over. Pyodide is served from this
 App's own files (copied from the `pyodide` npm package at build time), never from a CDN.
 
 The tests (`npm test`) run `src/rover.py` in the real Pyodide: every mission's reference solution lands on
 every map at par, multi-map missions cannot be passed by replaying the first map's moves, and crashes, Python
-errors, runaway programs and the sensors behave as described.
+errors, runaway programs, `try`/`except` around a crash, `input()`, `print()` and the sensors behave as
+described. Scoring and saved progress (including broken or old saved data) have their own tests.
 
 ## Run
 
@@ -48,10 +51,12 @@ errors, runaway programs and the sensors behave as described.
 npm ci
 npm run dev      # development server
 npm test         # missions and rover tests, in Pyodide
+npm run lint     # oxlint
+npm run pars     # prints each mission's par from its reference solution
 npm run build    # type-check and build to dist/ (about 14 MB, almost all of it Python)
 ```
 
-Requires Node 22.12 or later.
+Requires Node 22.18 or later (22, 24 or 26+), which runs the TypeScript scripts directly.
 
 ## Licence
 

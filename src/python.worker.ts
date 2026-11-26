@@ -17,7 +17,7 @@ async function start(indexURL: string): Promise<PyodideAPI> {
   return pyodide;
 }
 
-self.onmessage = async (event: MessageEvent<ToWorker>) => {
+self.addEventListener('message', async (event: MessageEvent<ToWorker>) => {
   const message = event.data;
   if (message.type === 'init') {
     python = start(message.indexURL);
@@ -40,4 +40,4 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
   } finally {
     run.destroy();
   }
-};
+});

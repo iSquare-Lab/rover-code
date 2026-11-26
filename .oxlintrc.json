@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    "unicorn/require-post-message-target-origin": "off",
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css", "@fontsource-variable/*"] }]
+  },
+  "ignorePatterns": ["dist"]
+}

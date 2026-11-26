@@ -35,7 +35,7 @@
     <main class="game">
       <section class="mission" aria-labelledby="mission-title">
         <p class="chapter" id="chapter"></p>
-        <h2 id="mission-title"></h2>
+        <h2 id="mission-title" tabindex="-1"></h2>
         <div class="brief" id="brief"></div>
         <p class="par" id="par"></p>
       </section>
@@ -45,7 +45,7 @@
           <canvas id="map" role="img" aria-label="Map"></canvas>
         </div>
         <div class="map-bar">
-          <div class="map-tabs" id="map-tabs" role="tablist" aria-label="Maps"></div>
+          <div class="map-tabs" id="map-tabs" role="group" aria-label="Maps"></div>
           <div class="playback">
             <label class="speed">Speed <input type="range" id="speed" min="1" max="5" step="1" value="3" /></label>
             <button type="button" class="ghost-btn small" id="skip-btn" disabled>Skip to end</button>
@@ -70,6 +70,7 @@
       <section class="console-card" aria-labelledby="console-title">
         <h2 id="console-title" class="visually-hidden">Rover log</h2>
         <div class="result" id="result" hidden></div>
+        <p class="visually-hidden" id="announce" role="status"></p>
         <ol class="log" id="log" aria-live="polite" aria-relevant="additions"></ol>
       </section>
     </main>

@@ -2,6 +2,6 @@
 try {
   var t = window.localStorage.getItem('rover-code:theme');
   if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
-} catch (e) {
+} catch {
   /* storage unavailable */
 }

@@ -11,10 +11,8 @@ export type Level = {
   maps: string[][];
   starter: string;
   // Fewest actions (moves, turns, picks; all maps together) and shortest program (lines that are not blank or
-  // comments), both from the reference solutions in tests/levels.test.ts.
+  // comments), both from the reference solutions in tests/solutions.ts (`npm run pars` prints them).
   par: { actions: number; lines: number };
-  // Functions introduced here, shown in the reference.
-  introduces?: string[];
 };
 
 export const CHAPTERS = ['First drive', 'Loops', 'Sensors', 'Functions'];
@@ -82,8 +80,8 @@ export function maze(cols: number, rows: number, seed: number, samples = 0): str
 // lander). The rover starts top-left facing east; the lander is at the end of the last row.
 export function field(width: number, height: number, count: number, seed: number): string[] {
   const rand = random(seed);
-  const grid = Array.from({ length: height + 2 }, (_, y) =>
-    Array.from({ length: width + 2 }, (_, x): string => (x === 0 || y === 0 || x === width + 1 || y === height + 1 ? '#' : '.')),
+  const grid = Array.from({ length: height + 2 }, (_row, y) =>
+    Array.from({ length: width + 2 }, (_cell, x): string => (x === 0 || y === 0 || x === width + 1 || y === height + 1 ? '#' : '.')),
   );
   const endX = height % 2 === 1 ? width : 1;
   let placed = 0;
@@ -107,7 +105,6 @@ export const LEVELS: Level[] = [
     maps: [['........', '.>....L.', '........']],
     starter: '# Drive the rover onto the lander.\nmove()\n',
     par: { actions: 5, lines: 5 },
-    introduces: ['move'],
   },
   {
     id: 'bend',
@@ -117,7 +114,6 @@ export const LEVELS: Level[] = [
     maps: [['#######', '#>...##', '####.##', '####.##', '####L##']],
     starter: 'move()\nmove()\nmove()\n',
     par: { actions: 7, lines: 7 },
-    introduces: ['turn_left', 'turn_right'],
   },
   {
     id: 'first-sample',
@@ -127,7 +123,6 @@ export const LEVELS: Level[] = [
     maps: [['.........', '.>..*...L', '.........']],
     starter: '',
     par: { actions: 8, lines: 8 },
-    introduces: ['pick'],
   },
   {
     id: 'rock-garden',
@@ -184,7 +179,6 @@ export const LEVELS: Level[] = [
     maps: [['>...L'], ['>........L'], ['>.............L']],
     starter: 'while ahead() != "lander":\n    pass  # what should repeat?\n',
     par: { actions: 27, lines: 3 },
-    introduces: ['ahead'],
   },
   {
     id: 'trench',
@@ -199,7 +193,6 @@ export const LEVELS: Level[] = [
     ],
     starter: 'while here() != "lander":\n    if ahead() == "rock":\n        turn_left()\n    move()\n',
     par: { actions: 57, lines: 7 },
-    introduces: ['here'],
   },
   {
     id: 'scatter',
@@ -263,7 +256,6 @@ export const LEVELS: Level[] = [
     maps: [maze(6, 5, 41, 3), maze(7, 5, 53, 4), maze(7, 6, 67, 5)],
     starter: '',
     par: { actions: 955, lines: 7 },
-    introduces: ['samples_left'],
   },
 ];
 

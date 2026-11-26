@@ -23,7 +23,7 @@
   --map-trail: rgb(120 60 30 / 0.28);
   --code-bg: #fffaf5;
   --code-text: #2a1712;
-  --code-gutter: #a08473;
+  --code-gutter: #8a6d5d;
   --code-active: rgb(194 65 12 / 0.05);
   --code-selection: rgb(194 65 12 / 0.18);
   --code-running: rgb(194 65 12 / 0.14);
@@ -31,9 +31,9 @@
   --code-keyword: #9a3412;
   --code-string: #166534;
   --code-number: #7c3aed;
-  --code-comment: #8b7267;
+  --code-comment: #7a6157;
   --code-function: #0e7490;
-  --code-punct: #6e554b;
+  --code-punct: #5c453c;
   --shadow: 0 1px 2px rgb(60 30 20 / 0.06), 0 10px 30px rgb(60 30 20 / 0.08);
   --font: 'Sora Variable', 'Sora', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Consolas, monospace;
@@ -54,10 +54,10 @@
     --danger: #f87171;
     --map-ground: #6b3524;
     --map-dot: #84452f;
-    --map-rock: #2e1a14;
-    --map-rock-edge: #1a0f0b;
-    --map-crater: #2a130c;
-    --map-crater-rim: #8a4a33;
+    --map-rock: #c4a594;
+    --map-rock-edge: #8c6a5a;
+    --map-crater: #1f0d08;
+    --map-crater-rim: #d08a66;
     --map-sample: #67e8f9;
     --map-lander: #f6ebe4;
     --map-rover: #f8fafc;
@@ -94,10 +94,10 @@
   --danger: #f87171;
   --map-ground: #6b3524;
   --map-dot: #84452f;
-  --map-rock: #2e1a14;
-  --map-rock-edge: #1a0f0b;
-  --map-crater: #2a130c;
-  --map-crater-rim: #8a4a33;
+  --map-rock: #c4a594;
+  --map-rock-edge: #8c6a5a;
+  --map-crater: #1f0d08;
+  --map-crater-rim: #d08a66;
   --map-sample: #67e8f9;
   --map-lander: #f6ebe4;
   --map-rover: #f8fafc;
@@ -281,6 +281,7 @@ code {
 }
 
 .map-card {
+  align-self: start;
   padding: 12px;
 }
 
@@ -326,7 +327,7 @@ code {
   cursor: pointer;
 }
 
-.map-tabs button[aria-selected='true'] {
+.map-tabs button[aria-pressed='true'] {
   border-color: var(--accent);
 }
 
@@ -387,6 +388,19 @@ code {
 .editor {
   height: 340px;
   overflow: hidden;
+}
+
+/* CodeMirror draws no outline of its own, so the editor shows keyboard focus here. */
+.editor:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+/* The keyboard tip means nothing on a touch screen. */
+@media (hover: none) and (pointer: coarse) {
+  .editor-tip {
+    display: none;
+  }
 }
 
 .editor .cm-editor {
@@ -512,6 +526,12 @@ code {
 .primary-btn:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+/* While Python starts, the Run button says so at full strength: it is a message, not a dead control. */
+.primary-btn[aria-busy='true'] {
+  opacity: 1;
+  cursor: progress;
 }
 
 .primary-btn {
@@ -672,7 +692,7 @@ dialog pre code {
     gap: 12px;
   }
   .editor {
-    height: 280px;
+    height: 220px;
   }
   .playback {
     margin-left: 0;

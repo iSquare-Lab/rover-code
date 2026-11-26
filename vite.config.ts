@@ -21,7 +21,12 @@ function pyodideFiles(): Plugin {
         if (!CORE.includes(file)) return next();
         const type = file.endsWith('.wasm') ? 'application/wasm' : file.endsWith('.mjs') ? 'text/javascript' : file.endsWith('.json') ? 'application/json' : 'application/octet-stream';
         response.setHeader('content-type', type);
-        createReadStream(join(coreDir, file)).pipe(response);
+        createReadStream(join(coreDir, file))
+          .on('error', () => {
+            response.statusCode = 404;
+            response.end('Pyodide file missing: run npm install.');
+          })
+          .pipe(response);
       });
     },
     async writeBundle() {

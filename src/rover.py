@@ -15,14 +15,31 @@ FILE = "<your program>"
 MAX_ACTIONS = 2000
 MAX_LINES = 200_000
 MAX_PRINTS = 200
+MAX_PRINT_LENGTH = 300
 
 
-class Stop(Exception):
+# Both end a run from inside the player's program. They derive from BaseException, not Exception, so an
+# `except Exception:` in the player's code does not catch them. A bare `except:` still could, so the World also
+# remembers that the run is over and raises it again at the next line or action (see World.check).
+class Stop(BaseException):
     """Ends a run: the rover crashed, or a limit was reached."""
 
+    def __init__(self, message, line=0):
+        super().__init__(message)
+        self.message = message
+        self.line = line
 
-class Arrived(Exception):
+
+class Arrived(BaseException):
     """Ends a run early: the rover is on the lander with every sample."""
+
+
+def user_line():
+    """The line of the player's program running now: the innermost frame from their file."""
+    frame = sys._getframe(1)
+    while frame is not None and frame.f_code.co_filename != FILE:
+        frame = frame.f_back
+    return frame.f_lineno if frame is not None else 0
 
 
 class World:
@@ -45,26 +62,37 @@ class World:
         self.actions = 0
         self.trace = []
         self.output = []
+        # Set when the run is over, so a program that catches Stop or Arrived cannot carry on.
+        self.stopped = None
+        self.arrived = False
 
     def at(self, x, y):
         if 0 <= y < self.height and 0 <= x < len(self.grid[y]):
             return self.grid[y][x]
         return None
 
-    def line(self):
-        # The line of the player's program that called us: the innermost frame of their file.
-        frame = sys._getframe(1)
-        while frame is not None and frame.f_code.co_filename != FILE:
-            frame = frame.f_back
-        return frame.f_lineno if frame is not None else 0
-
     def record(self, kind, note=None):
-        self.trace.append([kind, self.x, self.y, self.facing, self.left, self.line(), note])
+        self.trace.append([kind, self.x, self.y, self.facing, self.left, user_line(), note])
+
+    def stop(self, message, kind=None):
+        """Ends the run: records the crash when `kind` is given, then raises Stop."""
+        if kind:
+            self.record(kind, message)
+        self.stopped = Stop(message, user_line())
+        raise self.stopped
+
+    def check(self):
+        """Raises again whatever ended the run, in case the player's program caught it."""
+        if self.stopped is not None:
+            raise self.stopped
+        if self.arrived:
+            raise Arrived()
 
     def act(self):
+        self.check()
         self.actions += 1
         if self.actions > MAX_ACTIONS:
-            raise Stop(f"The rover made {MAX_ACTIONS} moves without finishing. Is a loop missing a way out?")
+            self.stop(f"The rover made {MAX_ACTIONS} moves without finishing. Is a loop missing a way out?")
 
     def done(self):
         return self.at(self.x, self.y) == "L" and self.left == 0
@@ -77,17 +105,15 @@ class World:
         nx, ny = self.x + dx, self.y + dy
         ahead = self.at(nx, ny)
         if ahead is None:
-            self.record("crash", "The rover would drive off the map.")
-            raise Stop("The rover would drive off the map.")
+            self.stop("The rover would drive off the map.", "crash")
         if ahead == "#":
-            self.record("crash", "The rover hit a rock.")
-            raise Stop("The rover hit a rock.")
+            self.stop("The rover hit a rock.", "crash")
         self.x, self.y = nx, ny
         if ahead == "o":
-            self.record("crater", "The rover drove into a crater.")
-            raise Stop("The rover drove into a crater.")
+            self.stop("The rover drove into a crater.", "crater")
         self.record("move")
         if self.done():
+            self.arrived = True
             raise Arrived()
 
     def turn_left(self):
@@ -103,13 +129,13 @@ class World:
     def pick(self):
         self.act()
         if self.at(self.x, self.y) != "*":
-            self.record("miss", "There is no sample here to pick up.")
-            raise Stop("There is no sample here to pick up.")
+            self.stop("There is no sample here to pick up.", "miss")
         self.grid[self.y][self.x] = "."
         self.left -= 1
         self.record("pick")
 
     def ahead(self):
+        self.check()
         dx, dy = STEP[self.facing]
         cell = self.at(self.x + dx, self.y + dy)
         seen = "edge" if cell is None else NAMES.get(cell, "clear")
@@ -117,31 +143,38 @@ class World:
         return seen
 
     def here(self):
-        cell = self.at(self.x, self.y)
-        seen = NAMES.get(cell, "clear")
+        self.check()
+        seen = NAMES.get(self.at(self.x, self.y), "clear")
         self.record("look", seen)
         return seen
 
     def samples_left(self):
+        self.check()
         self.record("look", str(self.left))
         return self.left
 
     def facing_name(self):
+        self.check()
         self.record("look", self.facing)
         return self.facing
 
-    def say(self, *values, sep=" ", end="\n", **_):
-        if len(self.output) >= MAX_PRINTS:
+    def say(self, *values, sep=None, end=None, **_):
+        # Like print(), where `sep` and `end` may be None. Each call is one line in the rover log.
+        if len(self.output) > MAX_PRINTS:
             return
-        text = (sep.join(str(v) for v in values) + ("" if end == "\n" else end))[:300]
-        line = self.line()
+        if len(self.output) == MAX_PRINTS:
+            text = f"(More than {MAX_PRINTS} lines printed: the rest is not shown.)"
+        else:
+            sep = " " if sep is None else str(sep)
+            end = "" if end is None or end == "\n" else str(end)
+            text = (sep.join(str(v) for v in values) + end)[:MAX_PRINT_LENGTH]
+        line = user_line()
         self.output.append([line, text])
         # Also in the trace, so the replay shows it when that line runs.
         self.trace.append(["print", self.x, self.y, self.facing, self.left, line, text])
 
-
-def no_input(*_):
-    raise Stop("Programs here can't ask for input. Use ahead(), here() and samples_left() to look around.")
+    def no_input(self, *_):
+        self.stop("Programs here can't ask for input. Use ahead(), here() and samples_left() to look around.")
 
 
 def describe_error(error):
@@ -154,8 +187,7 @@ def describe_error(error):
             line = tb.tb_lineno
         tb = tb.tb_next
     if isinstance(error, SyntaxError):
-        line = error.lineno or 0
-        return line, f"SyntaxError: {error.msg}"
+        return error.lineno or 0, f"SyntaxError: {error.msg}"
     name = type(error).__name__
     text = str(error)
     return line, f"{name}: {text}" if text else name
@@ -174,52 +206,56 @@ def run_map(rows, code):
         "samples_left": world.samples_left,
         "facing": world.facing_name,
         "print": world.say,
-        "input": no_input,
+        "input": world.no_input,
         "__name__": "__main__",
     }
     result = {"ok": False, "message": "", "line": 0}
-    counter = [0]
+    lines_run = 0
 
     def tracer(frame, event, arg):
+        nonlocal lines_run
         if frame.f_code.co_filename != FILE:
             return None
         if event == "line":
-            counter[0] += 1
-            if counter[0] > MAX_LINES:
-                raise Stop("Your program ran for a very long time without finishing. Is a loop missing a way out?")
+            world.check()
+            lines_run += 1
+            if lines_run > MAX_LINES:
+                message = "Your program ran for a very long time without finishing. Is a loop missing a way out?"
+                world.stopped = Stop(message, frame.f_lineno)
+                raise world.stopped
         return tracer
 
     try:
         program = compile(code, FILE, "exec")
     except SyntaxError as error:
         line, message = describe_error(error)
-        result.update(message=message, line=line, kind="syntax")
-        result.update(trace=world.trace, output=world.output, actions=0)
+        result.update(message=message, line=line, kind="syntax", trace=world.trace, output=world.output, actions=0)
         return result
     sys.settrace(tracer)
     try:
         exec(program, names)
-    except Arrived:
-        pass
-    except Stop as stop:
-        result.update(message=str(stop), line=world.trace[-1][5] if world.trace else 0, kind="stop")
-    except RecursionError:
-        result.update(message="RecursionError: a function kept calling itself.", line=0, kind="error")
+    except (Arrived, Stop):
+        pass  # read from the World below, which the program cannot hide
+    except RecursionError as error:
+        line, _ = describe_error(error)
+        result.update(message="RecursionError: a function kept calling itself.", line=line, kind="error")
     except Exception as error:  # the player's own mistake: show it like Python would
         line, message = describe_error(error)
         result.update(message=message, line=line, kind="error")
     finally:
         sys.settrace(None)
-    if not result["message"]:
-        if world.done():
-            result["ok"] = True
-            result["kind"] = "done"
-        elif world.left:
-            result.update(message=f"{world.left} sample{'s' if world.left != 1 else ''} still to collect.", kind="short")
-        elif world.samples:
-            result.update(message="Every sample is on board, but the rover is not on the lander.", kind="short")
-        else:
-            result.update(message="The program ended before the rover reached the lander.", kind="short")
+    if world.stopped is not None:
+        result.update(message=world.stopped.message, line=world.stopped.line, kind="stop")
+    elif world.arrived or (not result["message"] and world.done()):
+        result.update(ok=True, message="", line=0, kind="done")
+    elif result["message"]:
+        pass
+    elif world.left:
+        result.update(message=f"{world.left} sample{'s' if world.left != 1 else ''} still to collect.", kind="short")
+    elif world.samples:
+        result.update(message="Every sample is on board, but the rover is not on the lander.", kind="short")
+    else:
+        result.update(message="The program ended before the rover reached the lander.", kind="short")
     result.update(trace=world.trace, output=world.output, actions=world.actions)
     return result
 

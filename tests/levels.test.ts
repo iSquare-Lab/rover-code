@@ -99,4 +99,56 @@ describe('the rover', () => {
     const r = run([['>*#'], ['>L']], 'print(ahead(), here(), samples_left(), facing())')[0];
     expect(r.output[0][1]).toBe('sample clear 1 E');
   });
+
+  it('cannot be fooled by catching a crash or an arrival', () => {
+    const crater = run([['>o.L']], 'try:\n    move()\nexcept Exception:\n    pass\nmove()\nmove()')[0];
+    expect(crater).toMatchObject({ ok: false, message: 'The rover drove into a crater.', line: 2, kind: 'stop' });
+    const rock = run([['>#L']], 'try:\n    move()\nexcept:\n    pass\nturn_left()')[0];
+    expect(rock).toMatchObject({ ok: false, message: 'The rover hit a rock.', line: 2 });
+    const limit = run([['>.L']], 'while True:\n    try:\n        turn_left()\n    except:\n        pass')[0];
+    expect(limit).toMatchObject({ ok: false, kind: 'stop' });
+    expect(limit.message).toMatch(/2000 moves/);
+    const landed = run([['>L']], 'try:\n    move()\nexcept:\n    pass\nmove()')[0];
+    expect(landed).toMatchObject({ ok: true, kind: 'done', actions: 1 });
+  });
+
+  it('ends the program as soon as the rover lands', () => {
+    const r = run([['>L']], 'move()\nprint("after")')[0];
+    expect(r).toMatchObject({ ok: true, actions: 1 });
+    expect(r.output).toEqual([]);
+  });
+
+  it('points at the line for limits, input and recursion', () => {
+    const loop = run([['>.L']], '\nwhile True:\n    pass')[0];
+    expect(loop.kind).toBe('stop');
+    expect([2, 3]).toContain(loop.line);
+    expect(run([['>.L']], 'move()\nx = input()')[0]).toMatchObject({ kind: 'stop', line: 2, message: expect.stringMatching(/can't ask for input/) });
+    const recursion = run([['>.L']], 'def go():\n    go()\ngo()')[0];
+    expect(recursion).toMatchObject({ kind: 'error', message: 'RecursionError: a function kept calling itself.' });
+    expect([2, 3]).toContain(recursion.line);
+  });
+
+  it('prints like Python, and caps a flood of output', () => {
+    expect(run([['>L']], 'print("a", "b", sep=None, end=None)\nprint(1, 2, sep="-")')[0].output).toEqual([
+      [1, 'a b'],
+      [2, '1-2'],
+    ]);
+    const flood = run([['>.L']], 'for i in range(500):\n    print(i)')[0].output;
+    expect(flood).toHaveLength(201);
+    expect(flood[200][1]).toMatch(/rest is not shown/);
+  });
+});
+
+describe('scoring', () => {
+  const level = LEVELS[0];
+  it('gives one star for landing, one for the action par and one for the line par', () => {
+    expect(stars(level, level.par.actions, level.par.lines)).toBe(3);
+    expect(stars(level, level.par.actions + 1, level.par.lines)).toBe(2);
+    expect(stars(level, level.par.actions, level.par.lines + 1)).toBe(2);
+    expect(stars(level, level.par.actions + 1, level.par.lines + 1)).toBe(1);
+  });
+
+  it('counts only lines that do something', () => {
+    expect(programLines('# plan\nmove()\n\n   \n    # turn\nturn_left()  # left\n')).toBe(2);
+  });
 });
