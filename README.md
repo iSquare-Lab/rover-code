@@ -1,5 +1,7 @@
 # Rover Code
 
+![Rover Code: the labyrinth mission, a rover on a canyon maze beside the Python program that steers it](docs/screenshot-dark.png)
+
 A programming game. Your rover is on Mars, far from the lander, and the only way to drive it is to write a
 program in real Python. Pick up the rock samples, steer clear of rocks and craters, and land.
 
