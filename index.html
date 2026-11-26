@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rover Code · drive a rover with Python</title>
+    <meta
+      name="description"
+      content="A programming game: write real Python to drive a rover across Mars, collect samples and land. Python runs in your browser."
+    />
+    <meta name="theme-color" content="#f6efe8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#140d0b" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <script src="./theme-init.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <rect x="5" y="11" width="22" height="11" rx="4" fill="var(--accent)" />
+          <circle cx="10" cy="24" r="3" fill="var(--map-rover-dark)" />
+          <circle cx="22" cy="24" r="3" fill="var(--map-rover-dark)" />
+          <path d="M20 11V5h5" fill="none" stroke="var(--text)" stroke-width="2.4" stroke-linecap="round" />
+        </svg>
+        <h1>Rover Code</h1>
+      </div>
+      <div class="top-actions">
+        <span class="star-total" id="star-total"></span>
+        <button type="button" class="ghost-btn small" id="missions-btn">Missions</button>
+        <button type="button" class="ghost-btn small" id="reference-btn">Reference</button>
+        <button type="button" class="icon-btn" id="theme-btn" aria-label="Switch theme"></button>
+      </div>
+    </header>
+
+    <main class="game">
+      <section class="mission" aria-labelledby="mission-title">
+        <p class="chapter" id="chapter"></p>
+        <h2 id="mission-title"></h2>
+        <div class="brief" id="brief"></div>
+        <p class="par" id="par"></p>
+      </section>
+
+      <section class="map-card" aria-label="Map">
+        <div class="map-frame" id="map-frame">
+          <canvas id="map" role="img" aria-label="Map"></canvas>
+        </div>
+        <div class="map-bar">
+          <div class="map-tabs" id="map-tabs" role="tablist" aria-label="Maps"></div>
+          <div class="playback">
+            <label class="speed">Speed <input type="range" id="speed" min="1" max="5" step="1" value="3" /></label>
+            <button type="button" class="ghost-btn small" id="skip-btn" disabled>Skip to end</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="code-card" aria-label="Your program">
+        <div class="code-head">
+          <h2>Your program</h2>
+          <div class="code-actions">
+            <button type="button" class="ghost-btn small" id="reset-code">Start over</button>
+            <button type="button" class="primary-btn" id="run-btn" aria-keyshortcuts="Control+Enter" disabled>
+              <span class="run-icon" aria-hidden="true"></span><span id="run-label">Starting Python…</span>
+            </button>
+          </div>
+        </div>
+        <div class="editor" id="editor"></div>
+        <p class="editor-tip">Ctrl+Enter runs. Tab indents; press Esc, then Tab, to leave the editor.</p>
+      </section>
+
+      <section class="console-card" aria-labelledby="console-title">
+        <h2 id="console-title" class="visually-hidden">Rover log</h2>
+        <div class="result" id="result" hidden></div>
+        <ol class="log" id="log" aria-live="polite" aria-relevant="additions"></ol>
+      </section>
+    </main>
+
+    <dialog id="missions-dialog" aria-labelledby="missions-title">
+      <div class="dialog-head">
+        <h2 id="missions-title">Missions</h2>
+        <button type="button" class="icon-btn" id="missions-close" aria-label="Close">✕</button>
+      </div>
+      <div id="mission-list"></div>
+    </dialog>
+
+    <dialog id="reference-dialog" aria-labelledby="reference-title">
+      <div class="dialog-head">
+        <h2 id="reference-title">Python reference</h2>
+        <button type="button" class="icon-btn" id="reference-close" aria-label="Close">✕</button>
+      </div>
+      <h3>The rover</h3>
+      <dl class="api">
+        <dt><code>move()</code></dt><dd>Drive one square forward. Rocks, craters and the edge of the map end the run.</dd>
+        <dt><code>turn_left()</code>, <code>turn_right()</code></dt><dd>Turn a quarter turn on the spot.</dd>
+        <dt><code>pick()</code></dt><dd>Take the sample under the rover on board.</dd>
+        <dt><code>ahead()</code></dt><dd>What is in front: <code>"clear"</code>, <code>"rock"</code>, <code>"crater"</code>, <code>"sample"</code>, <code>"lander"</code> or <code>"edge"</code>.</dd>
+        <dt><code>here()</code></dt><dd>What is under the rover: <code>"clear"</code>, <code>"sample"</code> or <code>"lander"</code>.</dd>
+        <dt><code>samples_left()</code></dt><dd>How many samples are still out there.</dd>
+        <dt><code>facing()</code></dt><dd>The way the rover faces: <code>"N"</code>, <code>"E"</code>, <code>"S"</code> or <code>"W"</code>.</dd>
+        <dt><code>print(...)</code></dt><dd>Writes to the rover log, to see what your program is thinking.</dd>
+      </dl>
+      <h3>Python you will use</h3>
+      <pre><code>for step in range(4):      # repeat 4 times
+    move()
+
+while ahead() != "rock":   # repeat while true
+    move()
+
+if here() == "sample":     # only when true
+    pick()
+else:
+    move()
+
+def turn_around():         # name some lines
+    turn_left()
+    turn_left()</code></pre>
+      <p>It is real Python 3, running in your browser with Pyodide: everything else in the language works too. A mission is complete when the rover is on the lander with every sample on board. Moves, turns and picks count as actions; looking around is free.</p>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
