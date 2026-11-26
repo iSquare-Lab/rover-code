@@ -36,8 +36,9 @@ program in real Python. Pick up the rock samples, steer clear of rocks and crate
 `src/rover.py` is the world: the map, the rover and the functions above. A Web Worker
 (`src/python.worker.ts`) runs your program there against every map of the mission and sends back each step
 with the line that made it; the page then replays it on a canvas. A runaway loop is stopped by a limit on moves
-and lines in Python, and by replacing the worker if it still does not answer. A program cannot hide a crash or a
-limit by catching it with `try`/`except`: once the run is over, it stays over. Pyodide is served from this
+and lines in Python, and by replacing the worker if it still does not answer. Catching a crash or a limit with
+`try`/`except` does not save the run: the rover stays stopped, and the result says why (a program that keeps
+looping without the rover after that ends at the worker's time limit instead). Pyodide is served from this
 App's own files (copied from the `pyodide` npm package at build time), never from a CDN.
 
 The tests (`npm test`) run `src/rover.py` in the real Pyodide: every mission's reference solution lands on

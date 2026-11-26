@@ -20,7 +20,10 @@ MAX_PRINT_LENGTH = 300
 
 # Both end a run from inside the player's program. They derive from BaseException, not Exception, so an
 # `except Exception:` in the player's code does not catch them. A bare `except:` still could, so the World also
-# remembers that the run is over and raises it again at the next line or action (see World.check).
+# remembers that the run is over and raises it again at the next action, sensor call or traced line (see
+# World.check). Python turns tracing off once the tracer raises, so a program that then loops without calling the
+# rover is ended by the page's time limit. This guards against mistakes, not cheating: the scores live only in the
+# player's own browser.
 class Stop(BaseException):
     """Ends a run: the rover crashed, or a limit was reached."""
 

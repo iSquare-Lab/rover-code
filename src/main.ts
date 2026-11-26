@@ -256,6 +256,9 @@ async function run(): Promise<void> {
   log.replaceChildren();
   hideResult();
   editor.mark(0, 0);
+  // The map buttons replay the last results; until the new ones arrive there are none.
+  lastRuns = null;
+  renderTabs(null);
   try {
     const runs = await execute(runLevel.maps, code);
     if (level !== runLevel) return;
@@ -265,6 +268,7 @@ async function run(): Promise<void> {
     // Replay the maps in order, stopping at the first one that fails.
     const firstBad = runs.findIndex((r) => !r.ok);
     const order = firstBad < 0 ? runs.map((_, i) => i) : [...runs.keys()].slice(0, firstBad + 1);
+    stopPlayback();
     await play(order, runs);
     if (level !== runLevel) return;
     finish(runs, code);
@@ -286,6 +290,10 @@ function showMap(): void {
   $('map-frame').scrollIntoView({ block: 'nearest', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
 }
 
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
+
 function finish(runs: Run[], code: string): void {
   const bad = runs.findIndex((r) => !r.ok);
   if (bad >= 0) {
@@ -304,12 +312,15 @@ function finish(runs: Run[], code: string): void {
   progress.stars[level.id] = Math.max(before, got);
   saveProgress();
   updateStars();
-  const parts = [
-    `${actions} action${actions === 1 ? '' : 's'} (par ${level.par.actions})${actions <= level.par.actions ? ' ★' : ''}`,
-    `${lines} line${lines === 1 ? '' : 's'} (par ${level.par.lines})${lines <= level.par.lines ? ' ★' : ''}`,
+  const scores = [
+    { text: plural(actions, 'action'), par: level.par.actions, made: actions <= level.par.actions },
+    { text: plural(lines, 'line'), par: level.par.lines, made: lines <= level.par.lines },
   ];
+  const maps = runs.length > 1 ? `All ${runs.length} maps. ` : '';
+  const shown = scores.map((s) => `${s.text} (par ${s.par})${s.made ? ' ★' : ''}`).join(' · ');
+  const spoken = scores.map((s) => `${s.text}, par ${s.par}${s.made ? ', star' : ''}`).join('; ');
   const next = LEVELS[LEVELS.indexOf(level) + 1];
-  showResult('ok', `Landed! ${starText(got)}`, `${runs.length > 1 ? `All ${runs.length} maps. ` : ''}${parts.join(' · ')}.`, next, `Landed with ${got} of ${MAX_STARS} stars.`);
+  showResult('ok', `Landed! ${starText(got)}`, `${maps}${shown}.`, next, `Landed with ${got} of ${MAX_STARS} stars. ${maps}${spoken}.`);
 }
 
 // The result box is for the eye; the permanent live region next to it tells screen readers what happened.
@@ -320,7 +331,8 @@ function hideResult(): void {
   announcer.textContent = '';
 }
 
-function showResult(tone: 'ok' | 'bad', title: string, text: string, next?: Level, spokenTitle = title): void {
+// `spoken` replaces the title and text for screen readers when they hold symbols.
+function showResult(tone: 'ok' | 'bad', title: string, text: string, next?: Level, spoken = `${title} ${text}`): void {
   result.className = `result ${tone}`;
   result.hidden = false;
   result.replaceChildren();
@@ -330,7 +342,7 @@ function showResult(tone: 'ok' | 'bad', title: string, text: string, next?: Leve
   const p = document.createElement('p');
   p.textContent = text;
   result.append(h, p);
-  announcer.textContent = `${spokenTitle} ${text}`;
+  announcer.textContent = spoken;
   if (next) {
     const b = document.createElement('button');
     b.type = 'button';
